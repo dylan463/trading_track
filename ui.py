@@ -232,64 +232,46 @@ class TradingUI(QWidget):
         
         return pathname_before,pathname_after
 
-
-
-    def on_TP_clicked(self):
-        """Close selected trade as win"""
-        if self.selected_item:
-            custom_widget = self.list_trades.itemWidget(self.selected_item)
-            close_at = self.TP_mul.value() * float(custom_widget.risk)
-            trade_id = custom_widget.trade_id
-            before,after = self.set_images(trade_id)
-
-            trade = {
-                "trade_id":trade_id,
-                "closed_at":close_at,
-                "result":"TP",
-                "before":before,
-                "after":after
+    def return_trade(self,closed_at,result,info):
+        trade = {
+                "trade_id":info["trade_id"],
+                "closed_at":closed_at,
+                "result":result,
+                "before":info["before"],
+                "after":info["after"]
             }
-            # Emit signal for controller to handle
-
-            self.close_trade_signal.emit(trade)
+        self.close_trade_signal.emit(trade)
+        
+    def get_selected_info(self):
+        custom_widget = self.list_trades.itemWidget(self.selected_item)
+        risk = custom_widget.risk
+        trade_id = custom_widget.trade_id
+        before,after = self.set_images(trade_id)
+        return {"risk":risk,"trade_id":trade_id,"before":before,"after":after}
 
     def on_SL_clicked(self):
         """Close selected trade as loss"""
         if self.selected_item:
-            custom_widget = self.list_trades.itemWidget(self.selected_item)
-            close_at = self.SL_mul.value() * float(custom_widget.risk)
-            trade_id = custom_widget.trade_id
-            before,after = self.set_images(trade_id)
-            
-            trade = {
-                "trade_id":trade_id,
-                "close_at":close_at,
-                "result":"SL",
-                "before":before,
-                "after":after
-            }
-            # Emit signal for controller to handle
+            info = self.get_selected_info()
+            close_at = self.SL_mul.value() * float(info["risk"])          
+            result = "SL"
+            self.return_trade(close_at,result,info)
 
-            self.close_trade_signal.emit(trade)
+    def on_TP_clicked(self):
+        """Close selected trade as win"""
+        if self.selected_item:
+            info = self.get_selected_info()
+            closed_at = self.TP_mul.value() * float(info["risk"])
+            result = "TP"
+            self.return_trade(closed_at,result,info)
 
     def on_manual_close_clicked(self):
         """Handle manual trade close"""
         if self.selected_item:
-            custom_widget = self.list_trades.itemWidget(self.selected_item)
+            info = self.get_selected_info()
             close_at = float(self.manual_close_value.text())
-            trade_id = custom_widget.trade_id
-            before,after = self.set_images(trade_id)
-            
-            trade = {
-                "trade_id":trade_id,
-                "close_at":close_at,
-                "result":"MANUAL",
-                "before":before,
-                "after":after
-            }
-            # Emit signal for controller to handle
-
-            self.close_trade_signal.emit(trade)
+            result = "MANUAL"
+            self.return_trade(close_at,result,info)
 
     def on_delete_trade(self):
         """Handle delete trade button click"""
@@ -349,7 +331,6 @@ class TradingUI(QWidget):
         for i in range(self.list_trades.count()):
             item = self.list_trades.item(i)
             widget = self.list_trades.itemWidget(item)
-            CustomListElement().lab
             if widget.trade_id == trade_id:
                 widget.status = new_status
                 widget.status_label.setText(new_status)
@@ -369,5 +350,3 @@ class TradingUI(QWidget):
                     self.stacked.setCurrentIndex(0)
                     self.selected_item = None
                 break
-
-# main.py - Application entry point
