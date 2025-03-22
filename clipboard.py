@@ -18,11 +18,11 @@ from PyQt5.QtCore import Qt, pyqtSignal, QEvent
 
 class ScalableImageLabel(QLabel):
     selected = pyqtSignal(object)  # Signal pour indiquer quand le label est sélectionné
-    
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumSize(300, 200)
-        self.original_pixmap = None
+        self.original_pixmap : QPixmap = None
         self.current_rotation = 0
         self.setScaledContents(False)
         self.setText("Glissez une image ici, utilisez Ctrl+V ou cliquez sur 'Importer une image'")
@@ -87,6 +87,13 @@ class ScalableImageLabel(QLabel):
             self.setPixmap(pixmap)
             return True
         return False
+    
+    def save_image(self,file_path):
+        success= False
+        if not self.original_pixmap == None:
+            self.original_pixmap.save(file_path,"PNG")
+            success = True
+        return success
 
     def removeImage(self):
         """Supprime l'image actuellement affichée."""
@@ -108,6 +115,7 @@ class ScalableImageLabel(QLabel):
 
 class ZoneContainer(QWidget):
     zone_selected = pyqtSignal(object)  # Signal pour indiquer quand cette zone est sélectionnée
+    image_inserted = pyqtSignal() # indiquer que l'image a été mise a jour
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -119,7 +127,6 @@ class ZoneContainer(QWidget):
         
         # Connecter le signal du label
         self.image_label.selected.connect(self.on_label_selected)
-        
         # Boutons spécifiques à la zone
         self.button_layout = QHBoxLayout()
         self.import_button = QPushButton("Importer")
@@ -165,6 +172,9 @@ class ZoneContainer(QWidget):
         )
         self.load_image_from_file(file_path)
 
+        # signaler que l'on a inserer une image
+        self.image_inserted.emit()
+
     def load_image_from_file(self,file_path):
         if file_path:
             if self.image_label.load_image_from_file(file_path):
@@ -192,11 +202,16 @@ class ZoneContainer(QWidget):
         if mime_data.hasImage():
             image = clipboard.image()
             pixmap = QPixmap.fromImage(image)
+
             if not pixmap.isNull():
                 self.image_label.current_rotation = 0  # Réinitialiser la rotation
                 self.image_label.setPixmap(pixmap)
                 self.rotate_left_button.setEnabled(True)
                 self.rotate_right_button.setEnabled(True)
+
+                # signaler que l'on a inserer une image
+                self.image_inserted.emit()
+
                 return True
             else:
                 self.image_label.setText("Erreur: Image invalide dans le presse-papiers")
@@ -290,13 +305,12 @@ class ImageViewer(QWidget):
     def reset_images(self):
         self.zone1.image_label.removeImage()
         self.zone2.image_label.removeImage()
-        
  
     def paste_image_from_clipboard(self):
         # Coller l'image dans la zone actuellement sélectionnée
         if self.current_zone:
             self.current_zone.paste_image_from_clipboard()
-
+    
 # Exemple d'utilisation
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -304,6 +304,7 @@ class TradingUI(QWidget):
         self.SL_button.setEnabled(is_open)
         self.manual_close.setEnabled(False)
         self.manual_close_value.clear()
+        # place image in the image place holder
 
     def clear_trades(self):
         """Clear all trades from the list"""

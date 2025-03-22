@@ -62,10 +62,6 @@ class TradingProfile:
                 df['result'] = df['result'].astype(object)
                 df.loc[df['trade_id'] == trade_id, 'result'] = result
 
-                # Or store numeric results in the float column and strings elsewhere:
-                # Create a separate column for string results if needed
-                if 'result_type' not in df.columns:
-                    df['result_type'] = None
                 # Then use appropriate columns based on data type
                 if isinstance(result, (int, float)):
                     df.loc[df['trade_id'] == trade_id, 'result'] = result

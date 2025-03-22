@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QListWidgetItem
 import os
 from model import TradingProfile
 from ui import TradingUI
@@ -18,18 +18,38 @@ class TradingController:
         self.ui.close_trade_signal.connect(self.handle_close_trade)
         self.ui.delete_trade_signal.connect(self.handle_delete_trade)
         self.ui.on_selected_signal.connect(self.on_selected_item)
+        self.ui.image_view.zone1.image_inserted.connect(self.save_image)
+        self.ui.image_view.zone2.image_inserted.connect(self.save_image)
+
+    def save_image(self):
+        item : QListWidgetItem = self.ui.selected_item
+        trade_id = self.ui.list_trades.itemWidget(item).trade_id
+        before,after = self.ui.set_images(trade_id)
+        df = pd.read_excel(self.profile.database_path)
+        df["before"] = df["before"].astype(str)
+        df["after"] = df["after"].astype(str)
+        df.loc[df["trade_id"] == trade_id,"before"] = before
+        df.loc[df["trade_id"] == trade_id,"after"] = after
+        df.to_excel(self.profile.database_path,index = False)
+
+
 
     def on_selected_item(self,trade_id):
         df = pd.read_excel(self.profile.database_path)
         row = df[df["trade_id"] ==  trade_id].iloc[0]
-        path_before = row["before"]
-        path_after = row["after"]
-        if not path_before == None:
-            if os.path.exists(path_before):
-                self.ui.image_view.zone1.load_image_from_file(path_before)
-        if not path_after == None:
-            if os.path.exists(path_before):
-                self.ui.image_view.zone2.load_image_from_file(path_after)
+        path_before = str(row["before"]) if pd.notna(row["before"]) else ""
+        path_after = str(row["after"]) if pd.notna(row["after"]) else ""
+
+        # Vérifie que les fichiers existent avant de les charger
+        if path_before and os.path.exists(path_before):
+            self.ui.image_view.zone1.load_image_from_file(path_before)
+        else:
+            print(f"Image 'before' introuvable: {path_before}")
+
+        if path_after and os.path.exists(path_after):
+            self.ui.image_view.zone2.load_image_from_file(path_after)
+        else:
+            print(f"Image 'after' introuvable: {path_after}")
     
     def setup_account(self, account_name):
         """Set up account - load or create if needed"""
